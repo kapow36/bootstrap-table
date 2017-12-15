@@ -24,6 +24,7 @@
                 var search = _this.data("search");
                 var sortColumn = _this.data("sort-column");
                 var sortAsc = _this.data("sort-asc");
+                var page = _this.data("page");
 
                 //options
                 if (options)
@@ -34,6 +35,7 @@
                     search = options.search ? options.search : search;
                     sortColumn = options.sortColumn ? options.sortColumn : sortColumn;
                     sortAsc = options.sortAsc ? options.sortAsc : sortAsc;
+                    page = options.page ? options.page : page;
                 }
 
                 //defaults
@@ -43,13 +45,14 @@
                 search = search ? search : "";
                 sortColumn = sortColumn ? sortColumn : null;
                 sortAsc = sortAsc ? sortAsc : false;
+                page = page ? page : 1;
                 _this.data("page-size", pageSize);
                 _this.data("is-date-utc", isDateUTC);
                 _this.data("is-searchable", isSearchable);
                 _this.data("search", search);
                 _this.data("sort-column", sortColumn);
                 _this.data("sort-asc", sortAsc);
-                _this.data("page", 1);
+                _this.data("page", page);
 
                 //generate html
                 var tableContent = "<thead>";
@@ -60,7 +63,7 @@
                     tableContent += "<div class='input-group pull-right'>";
                     tableContent += "<input class='form-control input-sm' id='search-input' value='" + search + "'/>";
                     tableContent += "<span class='input-group-btn'>";
-                    tableContent += "<button class='btn btn-default btn-sm' id='search-input-btn'><span class='glyphicon glyphicon-search'></span></button>";
+                    tableContent += "<button type='button' class='btn btn-default btn-sm' id='search-input-btn'><span class='glyphicon glyphicon-search'></span></button>";
                     tableContent += "</span></div></td></tr>";
                 }
                 tableContent += "<tr class='header'>";
@@ -71,11 +74,11 @@
                 }
                 tableContent += "</tr></thead><tbody></tbody><tfoot>";
                 tableContent += "<tr><td colspan='42'>";
-                tableContent += "<button class='btn btn-default btn-sm' id='btnFirst'><span class='glyphicon glyphicon-step-backward'/></button>&nbsp;";
-                tableContent += "<button class='btn btn-default btn-sm' id='btnPrevious'><span class='glyphicon glyphicon-triangle-left'/></button>&nbsp;&nbsp;&nbsp;";
+                tableContent += "<button type='button' class='btn btn-default btn-sm' id='btnFirst'><span class='glyphicon glyphicon-step-backward'/></button>&nbsp;";
+                tableContent += "<button type='button' class='btn btn-default btn-sm' id='btnPrevious'><span class='glyphicon glyphicon-triangle-left'/></button>&nbsp;&nbsp;&nbsp;";
                 tableContent += "<label>Page</label>&nbsp;<input class='form-control input-sm' style='display:inline-block; width:65px;' id='txtPageNumber' value='1'/>&nbsp;<label>of</label>&nbsp;<label id='lblPageTotal'></label>&nbsp;&nbsp;&nbsp;";
-                tableContent += "<button class='btn btn-default btn-sm' id='btnNext'><span class='glyphicon glyphicon-triangle-right'/></button>&nbsp;";
-                tableContent += "<button class='btn btn-default btn-sm' id='btnLast'><span class='glyphicon glyphicon-step-forward'/></button>";
+                tableContent += "<button type='button' class='btn btn-default btn-sm' id='btnNext'><span class='glyphicon glyphicon-triangle-right'/></button>&nbsp;";
+                tableContent += "<button type='button' class='btn btn-default btn-sm' id='btnLast'><span class='glyphicon glyphicon-step-forward'/></button>";
                 tableContent += "</td></tr>";
                 tableContent += "</tfoot>";
 
@@ -166,7 +169,7 @@
                 });
 
                 // LOAD THE DATA
-                loadPage(_this, filteredData, columnKeys, 1, pageLoadedEvent);
+                loadPage(_this, filteredData, columnKeys, page, pageLoadedEvent);
 
                 // If a sort column was provided or is on the data attribute, sort
                 if (sortColumn != null)
