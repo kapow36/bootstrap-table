@@ -1,4 +1,4 @@
-﻿(function ($)
+(function ($)
 {
     $.fn.bootstrapTable = function (dataOrAction, columns, options, pageLoadedEvent)
     {
@@ -129,53 +129,30 @@
 
                 _this.find("#search-input-btn").on("click", function ()
                 {
-                    filteredData = data;
-
-                    var searchTerm = _this.find("#search-input").val().toLowerCase();
-                    _this.data("search", searchTerm);
-                    if (searchTerm != "")
+                    filteredData = searchTable(_this, data, columnKeys, page, pageLoadedEvent);
+                });
+                
+                _this.find("#search-input").on("keypress", function (e) 
+                {
+                    if (e.keyCode == 13) //Enter
                     {
-                        // Sort data and reload page
-                        filteredData = data.filter(function (dataObject)
-                        {
-                            var columnKeys = Object.keys(dataObject);
-                            for (var i = 0; i < columnKeys.length; i++)
-                            {
-                                if (dataObject[columnKeys[i]] != null && dataObject[columnKeys[i]].toString().toLowerCase().indexOf(searchTerm) >= 0)
-                                {
-                                    return true;
-                                }
-                            }
-                            return false;
-                        });
-                    }
-                    // Check if the current page is above the pageCount
-                    // Assign pageCount to the current page if it is
-                    var pageCount = filteredData.length > 0 ? Math.ceil(filteredData.length / pageSize) : 1;
-                    var page = _this.data("page") > pageCount ? pageCount : _this.data("page");
-                    _this.data("page", page);
-
-                    if (_this.data("sort-col") != null)
-                    {
-                        var sortColumnHeader = _this.find("thead a[data-column='" + _this.data("sort-col") + "']");
-
-                        sort(_this, filteredData, columns, sortColumnHeader, _this.data("sort-asc"), pageLoadedEvent);
-                    }
-                    else
-                    {
-                        // Reload the filtered data
-                        loadPage(_this, filteredData, columnKeys, page, pageLoadedEvent);
+                        filteredData = searchTable(_this, data, columnKeys, page, pageLoadedEvent);
                     }
                 });
+                
+                // Check if the current page is above the pageCount
+                // Assign 1 to the current page if it is, this is different than setting the page number text
+                var pageCount = filteredData.length > 0 ? Math.ceil(filteredData.length / pageSize) : 1;
+                var page = _this.data("page") > pageCount ? 1 : _this.data("page");
+                _this.data("page", page);
 
-                // LOAD THE DATA
+                // LOAD THE DATA                
                 loadPage(_this, filteredData, columnKeys, page, pageLoadedEvent);
 
                 // If a sort column was provided or is on the data attribute, sort
                 if (sortColumn != null)
                 {
                     var sortColumnHeader = _this.find("thead a[data-column='" + sortColumn + "']");
-
                     sort(_this, filteredData, columnKeys, sortColumnHeader, sortAsc, pageLoadedEvent);
                 }
 
@@ -226,7 +203,7 @@
             }
         }
 
-        function sort(table, data, columns, columnHeader, sortAsc, pageLoadedEvent)
+        function sort(table, data, columnKeys, columnHeader, sortAsc, pageLoadedEvent)
         {
             //icons
             table.find("thead a span").removeClass("glyphicon glyphicon-sort-by-attributes").removeClass("glyphicon glyphicon-sort-by-attributes-alt");
@@ -263,10 +240,53 @@
             });
 
             //load page
-            loadPage(table, sortedData, columns, table.data("page"), pageLoadedEvent);
+            loadPage(table, sortedData, columnKeys, table.data("page"), pageLoadedEvent);
         }
 
-        function loadPage(table, data, columns, page, pageLoadedEvent)
+        function searchTable(table, data, columnKeys, page, pageLoadedEvent) 
+        {
+            var filteredData = data;
+
+            var searchTerm = table.find("#search-input").val().toLowerCase();
+            table.data("search", searchTerm);
+            if (searchTerm != "")
+            {
+                // Sort data and reload page
+                filteredData = data.filter(function (dataObject)
+                {
+                    for (var i = 0; i < columnKeys.length; i++)
+                    {
+                        if (dataObject[columnKeys[i]] != null && dataObject[columnKeys[i]].toString().toLowerCase().indexOf(searchTerm) >= 0)
+                        {
+                            return true;
+                        }
+                    }
+                    return false;
+                });
+            }
+
+            // Check if the current page is above the pageCount
+            // Assign pageCount to the current page if it is
+            var pageCount = filteredData.length > 0 ? Math.ceil(filteredData.length / table.data("page-size")) : 1;
+            var page = table.data("page") > pageCount ? pageCount : table.data("page");
+            table.data("page", page);
+
+            if (table.data("sort-col") != null)
+            {
+                var sortColumnHeader = table.find("thead a[data-column='" + table.data("sort-col") + "']");
+
+                sort(table, filteredData, columns, sortColumnHeader, table.data("sort-asc"), pageLoadedEvent);
+            }
+            else
+            {
+                // Reload the filtered data
+                loadPage(table, filteredData, columnKeys, page, pageLoadedEvent);
+            }
+
+            return filteredData;
+        }
+
+        function loadPage(table, data, columnKeys, page, pageLoadedEvent)
         {
             //get and update page count
             var pageSize = table.data("page-size");
@@ -286,21 +306,21 @@
                 for (var i = 0; i < pageData.length; i++)
                 {
                     tableBodyContent += "<tr";
-                    var columnKeys = Object.keys(pageData[i]);
-                    for (var j = 0; j < columnKeys.length; j++)
+                    var headerColumnKeys = Object.keys(pageData[i]);
+                    for (var j = 0; j < headerColumnKeys.length; j++)
                     {
-                        var content = pageData[i][columnKeys[j]];
+                        var content = pageData[i][headerColumnKeys[j]];
                         if (table.data("is-date-utc") === true && isDateString(content) === true)
                         {
                             content = new Date(content + " UTC").toLocaleString();
                         }
-                        tableBodyContent += " data-" + columnKeys[j] + "='" + content + "'";
+                        tableBodyContent += " data-" + headerColumnKeys[j] + "='" + content + "'";
                     }
                     tableBodyContent += ">";
 
-                    for (var j = 0; j < columns.length; j++)
+                    for (var j = 0; j < columnKeys.length; j++)
                     {
-                        var content = pageData[i][columns[j]] == null ? "" : pageData[i][columns[j]];
+                        var content = pageData[i][columnKeys[j]] == null ? "" : pageData[i][columnKeys[j]];
                         if (table.data("is-date-utc") === true && isDateString(content) === true)
                         {
                             content = new Date(content + " UTC").toLocaleString();
