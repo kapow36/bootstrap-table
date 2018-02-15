@@ -9,7 +9,6 @@
             this.each(function ()
             {
                 var _this = $(this);
-
                 var filteredData = data;
 
                 if (!_this.is("table"))
@@ -57,20 +56,62 @@
                 //generate html
                 var tableContent = "<thead>";
 
-                if (isSearchable)
-                {
-                    tableContent += "<tr><td colspan='42'>";
-                    tableContent += "<div class='input-group pull-right'>";
-                    tableContent += "<input class='form-control input-sm' id='search-input' value='" + search + "'/>";
-                    tableContent += "<span class='input-group-btn'>";
-                    tableContent += "<button type='button' class='btn btn-default btn-sm' id='search-input-btn'><span class='glyphicon glyphicon-search'></span></button>";
-                    tableContent += "</span></div></td></tr>";
-                }
-                tableContent += "<tr class='header'>";
+                //set up column data
                 var columnKeys = Object.keys(columns);
                 for (var i = 0; i < columnKeys.length; i++)
                 {
-                    tableContent += "<th><a href='#' data-column='" + columnKeys[i] + "'>" + columns[columnKeys[i]] + "&nbsp;<span></span></a></th>";
+                    if (!columns[columnKeys[i]].Name)
+                    {
+                        columns[columnKeys[i]] = { Name: columns[columnKeys[i]], IsVisible: true };
+                    }
+                }
+
+                if (isSearchable)
+                {
+                    //header row
+                    tableContent += "<tr><td colspan='42'>";
+                    tableContent += "<div class='pull-right'>";
+                    tableContent += "<form class='form-inline' onsubmit='return false;'>";                    
+
+                    //column select
+                    //tableContent += "<div class='pull-right'>";
+                    tableContent += "<div class='btn-group column-select-dropdown'>";
+                    tableContent += "<button type='button' class='btn btn-default btn-sm dropdown-toggle' title='Select Columns' data-toggle='dropdown' aria-haspopup='true' aria-expanded='false' style='margin-right:10px;'><span class='glyphicon glyphicon-th-list'></span></button>";
+                    tableContent += "<ul class='dropdown-menu' onclick='event.stopPropagation();'>";
+                    for (var i = 0; i < columnKeys.length; i++)
+                    {
+                        tableContent += "<li><a href='#' style='padding:0;'><label style='width:100%; padding: 3px 20px; margin:0; cursor:pointer;'><input class='column-select-chk' type='checkbox' value='" + columnKeys[i] + "' ";
+                        if (columns[columnKeys[i]].IsVisible === true)
+                        {
+                            tableContent += "checked='checked'";
+                        }
+                        tableContent += "/>&nbsp;" + columns[columnKeys[i]].Name + "<label></a></li>";
+                    }
+                    tableContent += "</ul>";
+                    tableContent += "</div>";
+                    //tableContent += "</div>";
+
+                    //search input
+                    tableContent += "<div class='input-group'>";
+                    tableContent += "<input class='form-control input-sm' id='searchInput' value='" + search + "'/>";
+                    tableContent += "<span class='input-group-btn'>";
+                    tableContent += "<button type='button' class='btn btn-default btn-sm' id='searchInputBtn'><span class='glyphicon glyphicon-search'></span></button>";
+                    tableContent += "</span>";
+                    tableContent += "</div>";
+
+                    //end header row
+                    tableContent += "</form>";
+                    tableContent += "</div>";
+                    tableContent += "</td></tr>";
+                }
+                tableContent += "<tr class='header'>";
+                
+                for (var i = 0; i < columnKeys.length; i++)
+                {
+                    if (columns[columnKeys[i]].IsVisible === true)
+                    {
+                        tableContent += "<th><a href='#' data-column='" + columnKeys[i] + "'>" + columns[columnKeys[i]].Name + "&nbsp;<span></span></a></th>";
+                    }
                 }
                 tableContent += "</tr></thead><tbody></tbody><tfoot>";
                 tableContent += "<tr><td colspan='42'>";
@@ -87,80 +128,91 @@
                 //events
                 _this.find("#btnFirst").click(function ()
                 {
-                    loadPage(_this, filteredData, columnKeys, 1, pageLoadedEvent);
+                    loadPage(_this, filteredData, columns, 1, pageLoadedEvent);
                 });
 
                 _this.find("#btnPrevious").click(function ()
                 {
-                    loadPage(_this, filteredData, columnKeys, _this.data("page") - 1, pageLoadedEvent);
+                    loadPage(_this, filteredData, columns, _this.data("page") - 1, pageLoadedEvent);
                 });
 
                 _this.find("#btnNext").click(function ()
                 {
-                    loadPage(_this, filteredData, columnKeys, _this.data("page") + 1, pageLoadedEvent);
+                    loadPage(_this, filteredData, columns, _this.data("page") + 1, pageLoadedEvent);
                 });
 
                 _this.find("#btnLast").click(function ()
                 {
-                    loadPage(_this, filteredData, columnKeys, Math.ceil(data.length / _this.data("page-size")), pageLoadedEvent);
+                    loadPage(_this, filteredData, columns, Math.ceil(data.length / _this.data("page-size")), pageLoadedEvent);
                 });
 
                 _this.find("#txtPageNumber").keyup(function ()
                 {
-                    loadPage(_this, filteredData, columnKeys, $(this).val(), pageLoadedEvent);
+                    loadPage(_this, filteredData, columns, $(this).val(), pageLoadedEvent);
                 });
 
-                _this.find("thead a").click(function ()
+                _this.find("thead th > a").click(function ()
                 {
                     var span = $(this).find("span");
                     if (span.hasClass("glyphicon glyphicon-sort-by-attributes"))
                     {
-                        sort(_this, filteredData, columnKeys, $(this), false, pageLoadedEvent);
+                        sort(_this, filteredData, columns, $(this), false, pageLoadedEvent);
                     }
                     else if (span.hasClass("glyphicon glyphicon-sort-by-attributes-alt"))
                     {
-                        sort(_this, filteredData, columnKeys, $(this), true, pageLoadedEvent);
+                        sort(_this, filteredData, columns, $(this), true, pageLoadedEvent);
                     }
                     else
                     {
-                        sort(_this, filteredData, columnKeys, $(this), true, pageLoadedEvent);
+                        sort(_this, filteredData, columns, $(this), true, pageLoadedEvent);
                     }
                 });
 
-                _this.find("#search-input-btn").on("click", function ()
+                _this.find("#searchInputBtn").click(function ()
                 {
-                    filteredData = searchTable(_this, data, columnKeys, page, pageLoadedEvent);
+                    filteredData = searchTable(_this, data, columns, page, pageLoadedEvent);
                 });
-                
-                _this.find("#search-input").on("keypress", function (e) 
+
+                _this.find("#searchInput").keypress(function (e) 
                 {
                     if (e.keyCode == 13) //Enter
                     {
-                        filteredData = searchTable(_this, data, columnKeys, page, pageLoadedEvent);
+                        filteredData = searchTable(_this, data, columns, page, pageLoadedEvent);
                     }
                 });
-                
+
+                _this.find(".column-select-chk").click(function ()
+                {
+                    columns[$(this).val()].IsVisible = $(this).prop("checked");
+                });
+
+                _this.find(".column-select-dropdown").off().on("hidden.bs.dropdown", function ()
+                {
+                    _this.bootstrapTable(data, columns, null, pageLoadedEvent);
+                });
+
                 // Check if the current page is above the pageCount
                 // Assign 1 to the current page if it is, this is different than setting the page number text
                 var pageCount = filteredData.length > 0 ? Math.ceil(filteredData.length / pageSize) : 1;
                 var page = _this.data("page") > pageCount ? 1 : _this.data("page");
                 _this.data("page", page);
 
-                // LOAD THE DATA                
-                loadPage(_this, filteredData, columnKeys, page, pageLoadedEvent);
-
-                // If a sort column was provided or is on the data attribute, sort
-                if (sortColumn != null)
-                {
-                    var sortColumnHeader = _this.find("thead a[data-column='" + sortColumn + "']");
-                    sort(_this, filteredData, columnKeys, sortColumnHeader, sortAsc, pageLoadedEvent);
-                }
-
                 // If searching is enabled, and is prepopulated then click the input button
                 if (search != "" && isSearchable == true)
                 {
-                    _this.find("#search-input-btn").click();
+                    _this.find("#searchInputBtn").click();
                 }
+                // If a sort column was provided or is on the data attribute, sort
+                else if (sortColumn != null)
+                {
+                    var sortColumnHeader = _this.find("thead a[data-column='" + sortColumn + "']");
+                    sort(_this, filteredData, columns, sortColumnHeader, sortAsc, pageLoadedEvent);
+                }
+                else
+                {
+                    // LOAD THE DATA                
+                    loadPage(_this, filteredData, columns, page, pageLoadedEvent);
+                }                
             });
         }
         else
@@ -203,7 +255,7 @@
             }
         }
 
-        function sort(table, data, columnKeys, columnHeader, sortAsc, pageLoadedEvent)
+        function sort(table, data, columns, columnHeader, sortAsc, pageLoadedEvent)
         {
             //icons
             table.find("thead a span").removeClass("glyphicon glyphicon-sort-by-attributes").removeClass("glyphicon glyphicon-sort-by-attributes-alt");
@@ -240,14 +292,15 @@
             });
 
             //load page
-            loadPage(table, sortedData, columnKeys, table.data("page"), pageLoadedEvent);
+            loadPage(table, sortedData, columns, table.data("page"), pageLoadedEvent);
         }
 
-        function searchTable(table, data, columnKeys, page, pageLoadedEvent) 
+        function searchTable(table, data, columns, page, pageLoadedEvent) 
         {
             var filteredData = data;
+            var columnKeys = Object.keys(columns);
 
-            var searchTerm = table.find("#search-input").val().toLowerCase();
+            var searchTerm = table.find("#searchInput").val().toLowerCase();
             table.data("search", searchTerm);
             if (searchTerm != "")
             {
@@ -256,7 +309,9 @@
                 {
                     for (var i = 0; i < columnKeys.length; i++)
                     {
-                        if (dataObject[columnKeys[i]] != null && dataObject[columnKeys[i]].toString().toLowerCase().indexOf(searchTerm) >= 0)
+                        if (columns[columnKeys[i]].IsVisible === true
+                            && dataObject[columnKeys[i]] != null
+                            && dataObject[columnKeys[i]].toString().toLowerCase().indexOf(searchTerm) >= 0)
                         {
                             return true;
                         }
@@ -280,14 +335,16 @@
             else
             {
                 // Reload the filtered data
-                loadPage(table, filteredData, columnKeys, page, pageLoadedEvent);
+                loadPage(table, filteredData, columns, page, pageLoadedEvent);
             }
 
             return filteredData;
         }
 
-        function loadPage(table, data, columnKeys, page, pageLoadedEvent)
+        function loadPage(table, data, columns, page, pageLoadedEvent)
         {
+            console.log("load");
+
             //get and update page count
             var pageSize = table.data("page-size");
             var pageCount = data.length > 0 ? Math.ceil(data.length / pageSize) : 1;
@@ -306,26 +363,30 @@
                 for (var i = 0; i < pageData.length; i++)
                 {
                     tableBodyContent += "<tr";
-                    var headerColumnKeys = Object.keys(pageData[i]);
-                    for (var j = 0; j < headerColumnKeys.length; j++)
+                    var dataColumnKeys = Object.keys(pageData[i]);
+                    for (var j = 0; j < dataColumnKeys.length; j++)
                     {
-                        var content = pageData[i][headerColumnKeys[j]];
+                        var content = pageData[i][dataColumnKeys[j]];
                         if (table.data("is-date-utc") === true && isDateString(content) === true)
                         {
                             content = new Date(content + " UTC").toLocaleString();
                         }
-                        tableBodyContent += " data-" + headerColumnKeys[j] + "='" + content + "'";
+                        tableBodyContent += " data-" + dataColumnKeys[j] + "='" + content + "'";
                     }
                     tableBodyContent += ">";
 
+                    var columnKeys = Object.keys(columns);
                     for (var j = 0; j < columnKeys.length; j++)
                     {
-                        var content = pageData[i][columnKeys[j]] == null ? "" : pageData[i][columnKeys[j]];
-                        if (table.data("is-date-utc") === true && isDateString(content) === true)
+                        if (columns[columnKeys[j]].IsVisible === true)
                         {
-                            content = new Date(content + " UTC").toLocaleString();
+                            var content = pageData[i][columnKeys[j]] == null ? "" : pageData[i][columnKeys[j]];
+                            if (table.data("is-date-utc") === true && isDateString(content) === true)
+                            {
+                                content = new Date(content + " UTC").toLocaleString();
+                            }
+                            tableBodyContent += "<td>" + content + "</td>";
                         }
-                        tableBodyContent += "<td>" + content + "</td>";
                     }
                     tableBodyContent += "</tr>";
                 }
