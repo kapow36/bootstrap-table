@@ -9,12 +9,13 @@
             this.each(function ()
             {
                 var _this = $(this);
-                var filteredData = data;
 
                 if (!_this.is("table"))
                 {
                     throw "bootstrap-table must be a table";
                 }
+
+                var filteredData = convertDatesInDataToDateObjects(_this, data);
 
                 //data attributes
                 var pageSize = _this.data("page-size");
@@ -24,6 +25,7 @@
                 var sortColumn = _this.data("sort-column");
                 var sortAsc = _this.data("sort-asc");
                 var page = _this.data("page");
+                var areColumnsRemovable = _this.data("are-columns-removable");
 
                 //options
                 if (options)
@@ -35,6 +37,7 @@
                     sortColumn = options.sortColumn ? options.sortColumn : sortColumn;
                     sortAsc = options.sortAsc ? options.sortAsc : sortAsc;
                     page = options.page ? options.page : page;
+                    areColumnsRemovable = options.areColumnsRemovable ? options.areColumnsRemovable : areColumnsRemovable;
                 }
 
                 //defaults
@@ -45,6 +48,7 @@
                 sortColumn = sortColumn ? sortColumn : null;
                 sortAsc = sortAsc ? sortAsc : false;
                 page = page ? page : 1;
+                areColumnsRemovable = areColumnsRemovable ? areColumnsRemovable : false;
                 _this.data("page-size", pageSize);
                 _this.data("is-date-utc", isDateUTC);
                 _this.data("is-searchable", isSearchable);
@@ -52,6 +56,7 @@
                 _this.data("sort-column", sortColumn);
                 _this.data("sort-asc", sortAsc);
                 _this.data("page", page);
+                _this.data("are-columns-removable", areColumnsRemovable);
 
                 //generate html
                 var tableContent = "<thead>";
@@ -66,60 +71,68 @@
                     }
                 }
 
-                if (isSearchable)
+                if (isSearchable || areColumnsRemovable)
                 {
                     //header row
                     tableContent += "<tr><td colspan='42'>";
                     tableContent += "<div class='pull-right'>";
-                    tableContent += "<form class='form-inline' onsubmit='return false;'>";                    
+                    tableContent += "<form class='form-inline' onsubmit='return false;'>";
 
                     //column select
-                    //tableContent += "<div class='pull-right'>";
-                    tableContent += "<div class='btn-group column-select-dropdown'>";
-                    tableContent += "<button type='button' class='btn btn-default btn-sm dropdown-toggle' title='Select Columns' data-toggle='dropdown' aria-haspopup='true' aria-expanded='false' style='margin-right:10px;'><span class='glyphicon glyphicon-th-list'></span></button>";
-                    tableContent += "<ul class='dropdown-menu' onclick='event.stopPropagation();'>";
-                    for (var i = 0; i < columnKeys.length; i++)
+                    if (areColumnsRemovable)
                     {
-                        tableContent += "<li><a href='#' style='padding:0;'><label style='width:100%; padding: 3px 20px; margin:0; cursor:pointer;'><input class='column-select-chk' type='checkbox' value='" + columnKeys[i] + "' ";
-                        if (columns[columnKeys[i]].IsVisible === true)
+                        tableContent += "<div class='btn-group column-select-dropdown'>";
+                        tableContent += "<button type='button' class='btn btn-default btn-sm dropdown-toggle' title='Filter Columns' data-toggle='dropdown' aria-haspopup='true' aria-expanded='false' style='margin-right:10px;'><span class='glyphicon glyphicon-th-list'></span></button>";
+
+                        tableContent += "<ul class='dropdown-menu' onclick='event.stopPropagation();'>";
+                        for (var i = 0; i < columnKeys.length; i++)
                         {
-                            tableContent += "checked='checked'";
+                            tableContent += "<li><a href='#' style='padding:0;'><label style='width:100%; padding: 3px 20px; margin:0; cursor:pointer;'><input class='column-select-chk' type='checkbox' value='" + columnKeys[i] + "' ";
+                            if (columns[columnKeys[i]].IsVisible === true)
+                            {
+                                tableContent += "checked='checked'";
+                            }
+                            tableContent += "/>&nbsp;" + columns[columnKeys[i]].Name + "<label></a></li>";
                         }
-                        tableContent += "/>&nbsp;" + columns[columnKeys[i]].Name + "<label></a></li>";
+                        tableContent += "</ul>";
+                        tableContent += "</div>";
                     }
-                    tableContent += "</ul>";
-                    tableContent += "</div>";
-                    //tableContent += "</div>";
 
                     //search input
-                    tableContent += "<div class='input-group'>";
-                    tableContent += "<input class='form-control input-sm' id='searchInput' value='" + search + "'/>";
-                    tableContent += "<span class='input-group-btn'>";
-                    tableContent += "<button type='button' class='btn btn-default btn-sm' id='searchInputBtn'><span class='glyphicon glyphicon-search'></span></button>";
-                    tableContent += "</span>";
-                    tableContent += "</div>";
+                    if (isSearchable)
+                    {
+                        tableContent += "<div class='input-group'>";
+                        tableContent += "<input class='form-control input-sm' id='searchInput' placeholder='Search' value='" + search + "'/>";
+                        tableContent += "<span class='input-group-btn'>";
+                        tableContent += "<button type='button' class='btn btn-default btn-sm' id='searchInputBtn'><span class='glyphicon glyphicon-search'></span></button>";
+                        tableContent += "</span>";
+                        tableContent += "</div>";
+                    }
+
 
                     //end header row
                     tableContent += "</form>";
                     tableContent += "</div>";
                     tableContent += "</td></tr>";
                 }
+
                 tableContent += "<tr class='header'>";
-                
+
                 for (var i = 0; i < columnKeys.length; i++)
                 {
                     if (columns[columnKeys[i]].IsVisible === true)
                     {
-                        tableContent += "<th><a href='#' data-column='" + columnKeys[i] + "'>" + columns[columnKeys[i]].Name + "&nbsp;<span></span></a></th>";
+                        tableContent += "<th class='bootstrap-table-auto-generated'><a href='#' data-column='" + columnKeys[i] + "'>" + columns[columnKeys[i]].Name + "&nbsp;<span></span></a></th>";
                     }
                 }
+
                 tableContent += "</tr></thead><tbody></tbody><tfoot>";
                 tableContent += "<tr><td colspan='42'>";
-                tableContent += "<button type='button' class='btn btn-default btn-sm' id='btnFirst'><span class='glyphicon glyphicon-step-backward'/></button>&nbsp;";
-                tableContent += "<button type='button' class='btn btn-default btn-sm' id='btnPrevious'><span class='glyphicon glyphicon-triangle-left'/></button>&nbsp;&nbsp;&nbsp;";
+                tableContent += "<button type='button' class='btn btn-default btn-sm' id='btnFirst' title='First Page'><span class='glyphicon glyphicon-step-backward'/></button>&nbsp;";
+                tableContent += "<button type='button' class='btn btn-default btn-sm' id='btnPrevious' title='Previous Page'><span class='glyphicon glyphicon-triangle-left'/></button>&nbsp;&nbsp;&nbsp;";
                 tableContent += "<label>Page</label>&nbsp;<input class='form-control input-sm' style='display:inline-block; width:65px;' id='txtPageNumber' value='1'/>&nbsp;<label>of</label>&nbsp;<label id='lblPageTotal'></label>&nbsp;&nbsp;&nbsp;";
-                tableContent += "<button type='button' class='btn btn-default btn-sm' id='btnNext'><span class='glyphicon glyphicon-triangle-right'/></button>&nbsp;";
-                tableContent += "<button type='button' class='btn btn-default btn-sm' id='btnLast'><span class='glyphicon glyphicon-step-forward'/></button>";
+                tableContent += "<button type='button' class='btn btn-default btn-sm' id='btnNext' title='Next Page'><span class='glyphicon glyphicon-triangle-right'/></button>&nbsp;";
+                tableContent += "<button type='button' class='btn btn-default btn-sm' id='btnLast' title='Last Page'><span class='glyphicon glyphicon-step-forward'/></button>";
                 tableContent += "</td></tr>";
                 tableContent += "</tfoot>";
 
@@ -151,7 +164,7 @@
                     loadPage(_this, filteredData, columns, $(this).val(), pageLoadedEvent);
                 });
 
-                _this.find("thead th > a").click(function ()
+                _this.on("click", "thead th > a", function ()
                 {
                     var span = $(this).find("span");
                     if (span.hasClass("glyphicon glyphicon-sort-by-attributes"))
@@ -212,7 +225,7 @@
                 {
                     // LOAD THE DATA                
                     loadPage(_this, filteredData, columns, page, pageLoadedEvent);
-                }                
+                }
             });
         }
         else
@@ -281,12 +294,8 @@
                     vb = (b[sortColumn] === null) ? "" : "" + b[sortColumn];
 
                 //try converting to number
-                va = (isNaN(va)) ? va : padFilter(va, "00000000000000000000");
-                vb = (isNaN(vb)) ? vb : padFilter(vb, "00000000000000000000");
-
-                //try converting to date
-                va = (isDateString(va)) ? new Date(va) : va;
-                vb = (isDateString(vb)) ? new Date(vb) : vb;
+                va = (isNaN(va)) ? va.toLowerCase() : padFilter(va, "00000000000000000000");
+                vb = (isNaN(vb)) ? vb.toLowerCase() : padFilter(vb, "00000000000000000000");
 
                 return va > vb === sortAsc ? 1 : (va === vb ? 0 : -1);
             });
@@ -343,8 +352,6 @@
 
         function loadPage(table, data, columns, page, pageLoadedEvent)
         {
-            console.log("load");
-
             //get and update page count
             var pageSize = table.data("page-size");
             var pageCount = data.length > 0 ? Math.ceil(data.length / pageSize) : 1;
@@ -367,10 +374,7 @@
                     for (var j = 0; j < dataColumnKeys.length; j++)
                     {
                         var content = pageData[i][dataColumnKeys[j]];
-                        if (table.data("is-date-utc") === true && isDateString(content) === true)
-                        {
-                            content = new Date(content + " UTC").toLocaleString();
-                        }
+
                         tableBodyContent += " data-" + dataColumnKeys[j] + "='" + content + "'";
                     }
                     tableBodyContent += ">";
@@ -381,21 +385,29 @@
                         if (columns[columnKeys[j]].IsVisible === true)
                         {
                             var content = pageData[i][columnKeys[j]] == null ? "" : pageData[i][columnKeys[j]];
-                            if (table.data("is-date-utc") === true && isDateString(content) === true)
-                            {
-                                content = new Date(content + " UTC").toLocaleString();
-                            }
+
                             tableBodyContent += "<td>" + content + "</td>";
                         }
                     }
                     tableBodyContent += "</tr>";
                 }
-                table.find("thead th:not(:has(a))").remove();
+                table.find("thead th:not(.bootstrap-table-auto-generated,.bootstrap-table-persistent)").remove();
                 table.find("tbody").empty().append(tableBodyContent);
 
                 //update page number
                 table.data("page", page);
                 table.find("#txtPageNumber").val(page);
+
+                //add data changed events
+                table.find("tr").off().on("dataChange", function ()
+                {
+                    var index = $(this).index();
+
+                    for (var i = 0; i < dataColumnKeys.length; i++)
+                    {
+                        pageData[index][dataColumnKeys[i]] = $(this).data(dataColumnKeys[i].toLowerCase());
+                    }
+                });
 
                 //fire event
                 pageLoadedEvent(table.find("thead tr.header,tbody tr"));
@@ -407,6 +419,27 @@
                     table.find("#txtPageNumber").val(table.data("page"));
                 }
             }
+        }
+
+        function convertDatesInDataToDateObjects(table, data)
+        {
+            if (data.length > 0)
+            {
+                for (var i = 0; i < data.length; i++)
+                {
+                    var dataColumnKeys = Object.keys(data[i]);
+                    for (var j = 0; j < dataColumnKeys.length; j++)
+                    {
+                        var content = data[i][dataColumnKeys[j]];
+                        if (table.data("is-date-utc") == true && isDateString(content) === true)
+                        {
+                            data[i][dataColumnKeys[j]] = new Date(content + " UTC").toLocaleString();
+                        }
+                    }
+                }
+            }
+
+            return data;
         }
 
         //Return true if string 'value' is a string of a date
